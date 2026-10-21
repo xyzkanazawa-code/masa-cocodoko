@@ -1,0 +1,2269 @@
+/* ==========================================================================
+   リアルタイム位置情報共有ビューア - 極限シンプル・フローティング操作UI専用スタイル
+   ========================================================================== */
+
+/* 全体ラップ（フルスクリーン地図用） */
+.portal-map-wrapper {
+  width: 100%;
+  height: 100dvh; /* 100vh問題対応：スマホの伸縮アドレスバーに配慮した動的dvhを採用 */
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+/* フルスクリーン地図容器 */
+.full-map-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   超スリム・フローティングボタン (FAB) システム
+   ========================================================================== */
+
+/* フローティングボタン共通ベーススタイル */
+.fab-btn {
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 100;
+  outline: none;
+}
+
+.fab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 38px 0 rgba(15, 23, 42, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.fab-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 16px 0 rgba(15, 23, 42, 0.15);
+}
+
+/* A. 退出ボタン（左上に小さく配置） */
+.logout-fab {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-glass-solid);
+  color: var(--accent-error);
+}
+
+.logout-fab:hover {
+  background: var(--accent-error);
+  color: #ffffff;
+  border-color: var(--accent-error);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+}
+
+/* 左上の「退出」文字ラベル（スマホやタブレットで分かりやすく表示） */
+.fab-label-small {
+  position: absolute;
+  left: 54px;
+  background: var(--bg-glass-solid);
+  border: 1px solid var(--border-glass);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.logout-fab:hover .fab-label-small {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* B. 位置送信前：右下のアクションコンテナ */
+.floating-inactive-actions {
+  position: absolute;
+  bottom: 32px;
+  right: 32px;
+  z-index: 100;
+}
+
+/* カプセル型の特大「QRコード作成」開始ボタン */
+.start-fab {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(37, 99, 235, 0.85));
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 16px 28px;
+  border-radius: 99px;
+  gap: 10px;
+  font-size: 15px;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+}
+
+.start-fab:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 14px 36px rgba(59, 130, 246, 0.45);
+  transform: translateY(-3px);
+}
+
+.fab-label-large {
+  letter-spacing: 0.5px;
+}
+
+/* C. 位置送信中：右下のアクションコンテナ */
+.floating-active-actions {
+  position: absolute;
+  bottom: 32px;
+  right: 32px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+/* QRコード再表示ボタン (運行中) */
+.qr-fab {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.85));
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 14px 24px;
+  border-radius: 99px;
+  gap: 8px;
+  font-size: 13.5px;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
+}
+
+.qr-fab:hover {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 14px 32px rgba(16, 185, 129, 0.4);
+  transform: translateY(-3px);
+}
+
+/* 運行停止ボタン (運行中) */
+.stop-fab {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.85), rgba(220, 38, 38, 0.85));
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 14px 24px;
+  border-radius: 99px;
+  gap: 8px;
+  font-size: 13.5px;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.25);
+}
+
+.stop-fab:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 14px 32px rgba(239, 68, 68, 0.4);
+  transform: translateY(-3px);
+}
+
+.stop-icon-wrapper {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-stop-icon 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-stop-icon {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.fab-label {
+  letter-spacing: 0.2px;
+}
+
+/* ==========================================================================
+   時間選択ポップアップシート (ダイアログモーダル)
+   ========================================================================== */
+
+.duration-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.duration-modal-content {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-glass-solid);
+  border-radius: 24px;
+  box-shadow: var(--shadow-glass);
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  position: relative;
+  animation: modal-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.modal-icon-wrapper {
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.modal-icon-blue {
+  color: var(--accent-primary);
+}
+
+.duration-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.duration-opt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  border-radius: 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.duration-opt-btn:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.08));
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.duration-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.duration-cancel-btn:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .duration-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ==========================================================================
+   GPS警告 ＆ PCデモ走行リンク
+   ========================================================================== */
+
+/* GPSエラー警告 (地図上部にスマートにフロート) */
+.floating-gps-warning {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  max-width: 90vw;
+  animation: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.warning-icon {
+  flex-shrink: 0;
+  animation: warning-pulse 1s infinite alternate;
+}
+
+@keyframes warning-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+@keyframes slide-down {
+  0% { transform: translate(-50%, -20px); opacity: 0; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* PCシミュレータ走行用極小リンク (左下にひっそり退避配置) */
+.floating-demo-link-wrapper {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 99;
+}
+
+.demo-link-btn {
+  background: var(--bg-glass-solid);
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.demo-link-btn:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.demo-link-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--accent-warning);
+  color: var(--accent-warning);
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   QRコード印刷・共有モーダル (ポップアップ)
+   ========================================================================== */
+
+.qr-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.qr-modal-content {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-glass-solid);
+  border-radius: 28px;
+  box-shadow: var(--shadow-glass);
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  position: relative;
+  animation: modal-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.modal-close-btn:hover {
+  background: var(--accent-error);
+  color: white;
+  border-color: var(--accent-error);
+}
+
+.modal-body {
+  padding: 36px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.modal-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 380px;
+}
+
+.modal-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 印刷ボタンレイアウト */
+.print-buttons-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .print-buttons-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* 印刷ボタン（A4用：青） */
+.print-btn {
+  width: 100%;
+  padding: 13px 18px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.print-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* A6印刷ボタン（緑） */
+.print-btn.a6-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.print-btn.a6-btn:hover {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+/* カード印刷ボタン（紫） */
+.print-btn.card-btn {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.print-btn.card-btn:hover {
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.3);
+}
+
+/* URLコピー部 */
+.url-copy-box {
+  display: flex;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+[data-theme="dark"] .url-copy-box {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.modal-url-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+.url-copy-box .copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.url-copy-box .copy-btn.copied {
+  background: #10b981;
+}
+
+/* ==========================================================================
+   A4貼り紙用プレビューカード (画面表示時)
+   ========================================================================== */
+.printable-qr-card {
+  width: 100%;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 20px;
+  border: 2px solid #e2e8f0;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* 画面表示プレビュー時のサイズバリエーション */
+.printable-qr-card.print-size-a4 {
+  max-width: 100%;
+}
+
+.printable-qr-card.print-size-a6 {
+  max-width: 300px;
+  padding: 20px;
+  gap: 12px;
+  border-radius: 16px;
+}
+
+.printable-qr-card.print-size-card {
+  width: 220px; /* 名刺サイズの比率（55:91 = 1:1.65）に近づける */
+  height: 350px;
+  padding: 16px 14px;
+  gap: 8px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid #cbd5e1;
+}
+
+.print-badge-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.print-title-card {
+  font-size: 14px !important;
+  font-weight: 800;
+  margin-top: 4px !important;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.print-size-card .print-qr-wrapper {
+  width: 120px !important;
+  height: 120px !important;
+  padding: 6px !important;
+  margin: 4px 0 !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+}
+
+.print-veh-card {
+  font-size: 12px !important;
+  color: #0f172a;
+  margin: 0 !important;
+}
+
+.print-expiry-card {
+  font-size: 9px !important;
+  font-weight: bold;
+  color: #e11d48;
+  margin-top: 2px !important;
+}
+
+.print-footer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+[data-theme="dark"] .printable-qr-card {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.print-badge {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.printable-qr-card h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 6px;
+  letter-spacing: -0.02em;
+}
+
+.print-desc {
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.55;
+  max-width: 340px;
+}
+
+.print-qr-wrapper {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  padding: 10px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 160px;
+}
+
+.print-qr-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.printable-qr-card h2 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.print-expiry {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e11d48;
+}
+
+.print-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.print-hint {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   レスポンシブデザイン (モバイル・スマホ最適化)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .floating-inactive-actions,
+  .floating-active-actions {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .start-fab {
+    padding: 14px 22px;
+    font-size: 14px;
+  }
+
+  .qr-fab, .stop-fab {
+    padding: 12px 18px;
+    font-size: 12.5px;
+  }
+
+  .logout-fab {
+    top: 16px;
+    left: 16px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .fab-label-small {
+    left: 48px;
+  }
+
+  .duration-modal-content {
+    max-width: calc(100vw - 32px);
+    border-radius: 20px;
+  }
+
+  .duration-options-grid {
+    gap: 8px;
+  }
+
+  .duration-opt-btn {
+    padding: 14px 10px;
+    font-size: 12.5px;
+    border-radius: 12px;
+  }
+
+  .qr-modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 24px;
+  }
+
+  .modal-body {
+    padding: 24px 16px;
+  }
+
+  .printable-qr-card {
+    padding: 20px;
+  }
+
+  .printable-qr-card h1 {
+    font-size: 18px;
+  }
+
+  .print-qr-wrapper {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+/* ==========================================================================
+   🖨️ 印刷専用CSS (@media print) の魔法
+   ========================================================================== */
+@media print {
+  /* 印刷に不要な全UI要素を完全に非表示 */
+  .full-map-container,
+  .fab-btn,
+  .logout-fab,
+  .reload-fab,
+  .message-fab,
+  .floating-gps-warning,
+  .floating-demo-link-wrapper,
+  .system-marquee-container,
+  .message-center-sidebar,
+  .emergency-toast-container {
+    display: none !important;
+  }
+
+  /* 印刷時はスクロールバーを隠し、背景を白に統一 */
+  body, html {
+    background: #ffffff !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* モーダル自体の枠組みを印刷用に再編成 */
+  .qr-modal-overlay {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    background: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important; /* コンテンツを用紙の中央に美しく配置 */
+  }
+
+  .qr-modal-content {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .modal-close-btn,
+  .modal-title,
+  .extend-duration-section,
+  .modal-hint,
+  .modal-actions {
+    display: none !important;
+  }
+
+  /* 印刷用カードベーススタイル */
+  .printable-qr-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    text-align: center !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* --- A4印刷時のアセット要素スケール（実寸 210mm x 297mm） --- */
+  .printable-qr-card.print-size-a4 {
+    width: 210mm !important;
+    height: 297mm !important;
+    padding: 20mm 15mm !important;
+    border: none !important; /* 壁紙なので枠線なし */
+    justify-content: center !important;
+    gap: 30px !important;
+  }
+
+  /* --- A6印刷時のアセット要素スケール（実寸 105mm x 148mm、A4印刷時の切り取り破線付き） --- */
+  .printable-qr-card.print-size-a6 {
+    width: 105mm !important;
+    height: 148mm !important;
+    padding: 10mm 8mm !important;
+    border: 1.5px dashed #7f8c8d !important; /* A4用紙で印刷した際のハサミ切り取り用破線 */
+    border-radius: 8mm !important;
+    justify-content: space-between !important;
+  }
+
+  /* --- カード印刷時のアセット要素スケール（実寸 55mm x 91mm、A4印刷時の切り取り破線付き） --- */
+  .printable-qr-card.print-size-card {
+    width: 55mm !important;
+    height: 91mm !important;
+    padding: 6mm 4mm !important;
+    border: 1.5px dashed #7f8c8d !important; /* A4用紙で印刷した際のハサミ切り取り用破線 */
+    border-radius: 4mm !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+
+  /* --- A4印刷時のアセット要素スケール --- */
+  .print-size-a4 .print-badge {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #166534 !important;
+    padding: 6px 16px !important;
+    font-size: 14px !important;
+    border-radius: 99px !important;
+  }
+
+  .print-size-a4 h1 {
+    font-size: 32px !important;
+    font-weight: 800 !important;
+    margin-top: 24px !important;
+    color: #0f172a !important;
+  }
+
+  .print-size-a4 .print-desc {
+    font-size: 16px !important;
+    color: #475569 !important;
+    max-width: 500px !important;
+    margin-top: 14px !important;
+    line-height: 1.6 !important;
+  }
+
+  .print-size-a4 .print-qr-wrapper {
+    width: 300px !important;
+    height: 300px !important;
+    padding: 16px !important;
+    margin: 30px 0 !important;
+    border: 2px solid #cbd5e1 !important;
+    border-radius: 20px !important;
+    background: #ffffff !important;
+  }
+  
+  .print-size-a4 .print-qr-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .print-size-a4 h2 {
+    font-size: 22px !important;
+    color: #0f172a !important;
+  }
+
+  .print-size-a4 .print-expiry {
+    font-size: 16px !important;
+    font-weight: bold !important;
+    color: #e11d48 !important;
+    margin-top: 6px !important;
+  }
+
+  .print-size-a4 .print-hint {
+    font-size: 14px !important;
+    color: #64748b !important;
+    margin-top: 10px !important;
+  }
+
+  /* --- A6印刷時のアセット要素スケール（コンパクト） --- */
+  .print-size-a6 .print-badge {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #166534 !important;
+    padding: 3px 10px !important;
+    font-size: 10px !important;
+    border-radius: 99px !important;
+  }
+
+  .print-size-a6 h1 {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    margin-top: 10px !important;
+    color: #0f172a !important;
+  }
+
+  .print-size-a6 .print-desc {
+    font-size: 10px !important;
+    color: #475569 !important;
+    max-width: 250px !important;
+    margin-top: 6px !important;
+    line-height: 1.4 !important;
+  }
+
+  .print-size-a6 .print-qr-wrapper {
+    width: 160px !important;
+    height: 160px !important;
+    padding: 8px !important;
+    margin: 12px 0 !important;
+    border: 2px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+  }
+  
+  .print-size-a6 .print-qr-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .print-size-a6 h2 {
+    font-size: 12px !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+  }
+
+  .print-size-a6 .print-expiry {
+    font-size: 9px !important;
+    font-weight: bold !important;
+    color: #e11d48 !important;
+    margin-top: 3px !important;
+  }
+
+  .print-size-a6 .print-hint {
+    font-size: 8px !important;
+    color: #64748b !important;
+    margin-top: 4px !important;
+  }
+
+  /* --- カード印刷時のアセット要素スケール（極小・名刺サイズ用） --- */
+  .print-size-card .print-badge-card {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #166534 !important;
+    padding: 3px 8px !important;
+    font-size: 9px !important;
+    border-radius: 99px !important;
+  }
+
+  .print-size-card .print-title-card {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    margin-top: 4px !important;
+    color: #0f172a !important;
+  }
+
+  .print-size-card .print-qr-wrapper {
+    width: 110px !important;
+    height: 110px !important;
+    padding: 6px !important;
+    margin: 6px 0 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+  }
+  
+  .print-size-card .print-qr-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .print-size-card .print-veh-card {
+    font-size: 11px !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+  }
+
+  .print-size-card .print-expiry-card {
+    font-size: 9px !important;
+    font-weight: bold !important;
+    color: #e11d48 !important;
+    margin-top: 2px !important;
+  }
+
+  .print-size-card .print-footer-card {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    align-items: center !important;
+  }
+}
+
+/* ==========================================================================
+   アニメーション定義
+   ========================================================================== */
+@keyframes modal-bounce {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   メッセージセンターフローティングボタン & サイドパネル (追加)
+   ========================================================================== */
+
+/* メッセージボタン（退出ボタンの下） */
+.message-fab {
+  position: absolute;
+  top: 76px; /* 20px(logout top) + 44px(logout height) + 12px(spacing) */
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-glass-solid);
+  color: var(--accent-primary);
+}
+
+.message-fab:hover, .message-fab.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+}
+
+/* メッセージボタンの未読件数バッジ */
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--accent-error);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1.5px solid var(--bg-glass-solid);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+.pulse-badge {
+  animation: badge-pulse 2s infinite alternate;
+}
+
+@keyframes badge-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.5); }
+}
+
+/* メッセージセンターサイドパネル（左側スライドイン） */
+.message-center-sidebar {
+  position: absolute;
+  top: 20px;
+  left: 80px; /* 20px(logout) + 44px(logout width) + 16px(spacing) */
+  bottom: 20px;
+  width: 380px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+  border-radius: 24px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slide-in-left 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme="dark"] .message-center-sidebar {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.slide-in-left {
+  transform: translateX(-40px);
+  opacity: 0;
+}
+
+@keyframes slide-in-left {
+  0% { transform: translateX(-40px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* ヘッダー */
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.title-icon {
+  color: var(--accent-primary);
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mute-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.mute-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .mute-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 6px;
+  line-height: 1;
+}
+
+.sidebar-close-btn:hover {
+  color: var(--accent-error);
+}
+
+/* ボディ */
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.section-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.section-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+/* お知らせ配信エリア */
+.announcement-input-group {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--border-glass);
+  border-radius: 14px;
+  padding: 10px;
+  transition: all 0.2s;
+}
+
+[data-theme="dark"] .announcement-input-group {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.announcement-input-group:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.announcement-textarea {
+  width: 100%;
+  height: 70px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.send-announcement-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-primary), #2563eb);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+}
+
+.send-announcement-btn:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.send-announcement-btn:disabled {
+  background: var(--border-glass);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 配信履歴 */
+.announcement-history {
+  margin-top: 14px;
+  background: rgba(245, 158, 11, 0.04);
+  border: 1px dashed rgba(245, 158, 11, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.clear-history-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 9.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.clear-history-btn:hover {
+  color: var(--accent-error);
+}
+
+.history-list {
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-text {
+  font-size: 11.5px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.history-time {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  align-self: flex-end;
+}
+
+/* 受信メッセージリスト */
+.clear-feedbacks-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.clear-feedbacks-btn:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.empty-feedbacks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.bell-icon {
+  color: var(--border-glass);
+  animation: swing 2s infinite ease-in-out;
+}
+
+@keyframes swing {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(15deg); }
+  40% { transform: rotate(-10deg); }
+  60% { transform: rotate(5deg); }
+  80% { transform: rotate(-5deg); }
+}
+
+.feedbacks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.feedback-item {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-glass);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+[data-theme="dark"] .feedback-item {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.feedback-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.feedback-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.feedback-item-time {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.feedback-check-btn {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feedback-check-btn:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+}
+
+.feedback-item-text {
+  font-size: 12.5px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* スマホ用のメッセージボタンやサイドパネルの調整 */
+@media (max-width: 640px) {
+  .message-fab {
+    top: 72px; /* 16px(logout top) + 40px(logout height) + 16px */
+    left: 16px;
+  }
+  
+  .message-center-sidebar {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    bottom: 84px; /* QRボタン等と被らないように下を空ける */
+    border-radius: 20px;
+    z-index: 10000;
+  }
+}
+
+/* ==========================================================================
+   緊急SOS警告トースト (追加)
+   ========================================================================== */
+.emergency-toast-container {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  width: 90%;
+  max-width: 450px;
+  cursor: pointer;
+  animation: slide-down 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.emergency-toast {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(239, 68, 68, 0.85); /* 半透明の緊急赤 */
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 40px rgba(239, 68, 68, 0.4);
+  border-radius: 18px;
+  padding: 14px 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.emergency-toast:hover {
+  background: rgba(239, 68, 68, 0.95);
+  box-shadow: 0 16px 48px rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+}
+
+.toast-icon {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.pulse-sos-icon {
+  animation: sos-icon-pulse 1s infinite alternate;
+}
+
+@keyframes sos-icon-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.25); filter: drop-shadow(0 0 8px #fff); }
+}
+
+.toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.toast-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.toast-sub {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-close:hover {
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+/* モバイルでの位置調整 */
+@media (max-width: 640px) {
+  .emergency-toast-container {
+    top: 16px;
+  }
+  .emergency-toast {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  .toast-title {
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   📢 システムメッセージ電光掲示板 (テロップ) ＆ 更新ボタン
+   ========================================================================== */
+
+/* A. 地図右上・左上フロート更新ボタン (reload-fab) */
+.reload-fab {
+  position: absolute;
+  top: 20px;
+  left: 74px; /* 退出ボタンの右隣に並べる */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-glass-solid);
+  color: var(--accent-primary);
+}
+
+.reload-fab:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+}
+
+.reload-fab.refreshing {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.reload-fab:hover .fab-label-small {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* B. 緊急電光掲示板テロップコンテナ */
+.system-marquee-container {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 760px;
+  height: 46px;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.95), rgba(245, 158, 11, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 14px;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3),
+              0 0 15px rgba(245, 158, 11, 0.2);
+  z-index: 9999;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: marquee-slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.marquee-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-right: 14px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1);
+}
+
+.marquee-alert-icon {
+  color: #fffb00;
+}
+
+.marquee-content-wrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.marquee-text-flow {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding-left: 100%;
+  animation: marquee-flow 25s linear infinite;
+}
+
+.marquee-reload-btn {
+  background: white;
+  border: none;
+  color: #ef4444;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.marquee-reload-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  background: #fff8f8;
+}
+
+.marquee-reload-btn:active {
+  transform: scale(0.98);
+}
+
+.marquee-reload-btn.refreshing {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+/* アニメーション */
+@keyframes marquee-flow {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+@keyframes marquee-slide-down {
+  0% {
+    transform: translate(-50%, -30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+/* レスポンシブ調整（スマホ） */
+@media (max-width: 640px) {
+  .reload-fab {
+    top: 16px;
+    left: 64px;
+    width: 40px;
+    height: 40px;
+  }
+  .system-marquee-container {
+    top: 72px; /* 退出・更新ボタンの下に避ける */
+    width: 92%;
+    height: 42px;
+    padding: 0 6px 0 10px;
+  }
+  .marquee-label {
+    padding: 3px 6px;
+    font-size: 10px;
+    margin-right: 8px;
+  }
+  .marquee-text-flow {
+    font-size: 12px;
+  }
+  .marquee-reload-btn {
+    padding: 5px 10px;
+    font-size: 10.5px;
+    margin-left: 8px;
+  }
+}
+
+/* ==========================================================================
+   📸 スマホ保存用画像生成ボタン & 長押し保存モーダル
+   ========================================================================== */
+
+/* 画像生成ボタン */
+.save-image-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.15));
+  color: #10b981;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.05);
+  margin-top: 4px;
+}
+
+.save-image-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.25));
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.1);
+  transform: translateY(-1px);
+}
+
+.save-image-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.save-image-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .save-image-btn:disabled {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* スマホ用・画像長押し保存用ポップアップモーダル */
+.save-image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30000;
+  padding: 16px;
+}
+
+.save-image-modal-content {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 28px;
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass), 0 24px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: modal-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+[data-theme="dark"] .save-image-modal-content {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 長押し保存説明枠 */
+.save-instruction-alert {
+  display: flex;
+  gap: 10px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin: 14px 0;
+  align-items: flex-start;
+}
+
+.alert-emoji {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.alert-text {
+  font-size: 12px;
+  color: #065f46;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0;
+}
+
+[data-theme="dark"] .alert-text {
+  color: #a7f3d0;
+}
+
+/* 生成された画像の表示エリア */
+.generated-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 20px;
+  padding: 14px;
+  margin: 12px 0;
+  max-height: 35vh;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .generated-image-container {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.generated-image-preview {
+  max-width: 100%;
+  max-height: 30vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  -webkit-touch-callout: default !important;
+  user-select: all !important;
+}
+
+/* 直接ダウンロードボタン */
+.direct-download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  text-align: center;
+}
+
+.direct-download-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.direct-download-btn:active {
+  transform: translateY(1px);
+}
+
+/* モーダルの閉じる（キャンセル）ボタン */
+.save-modal-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.save-modal-close-btn:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .save-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* モバイル対応 */
+@media (max-width: 640px) {
+  .save-image-modal-content {
+    max-width: 94%;
+    border-radius: 24px;
+  }
+  .generated-image-container {
+    max-height: 40vh;
+    padding: 10px;
+  }
+  .generated-image-preview {
+    max-height: 35vh;
+  }
+  .save-image-btn {
+    font-size: 12.5px;
+    padding: 10px 14px;
+  }
+}
+
+/* ==========================================================================
+   ⚙️ 設定ボタン (settings-fab)
+   ========================================================================== */
+.settings-fab {
+  position: absolute;
+  top: 20px;
+  left: 128px; /* 退出・更新ボタンの右隣に並べる */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-glass-solid);
+  color: var(--text-primary);
+}
+
+.settings-fab:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+}
+
+.settings-fab:hover .fab-label-small {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 🧭 現在地ボタン (locate-fab) */
+.locate-fab {
+  position: absolute;
+  top: 20px;
+  left: 182px; /* 退出、更新、設定ボタンの右隣に並べる */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-glass-solid);
+  color: var(--accent-primary);
+}
+
+.locate-fab:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+}
+
+.locate-fab.locating {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.locate-fab:hover .fab-label-small {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* スマホ用設定・現在地ボタン・アクションボタン・Leafletズーム調整 */
+@media (max-width: 640px) {
+  .settings-fab {
+    top: 16px;
+    left: 112px; /* 退出(16px) + 更新(64px) の右隣 */
+    width: 40px;
+    height: 40px;
+  }
+
+  .locate-fab {
+    top: 16px;
+    left: 160px; /* 退出(16px) + 更新(64px) + 設定(112px) の右隣 */
+    width: 40px;
+    height: 40px;
+  }
+
+  .floating-inactive-actions,
+  .floating-active-actions {
+    bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    right: 20px !important;
+  }
+
+  /* Leaflet ズームコントロールの位置調整（スマホでの衝突回避） */
+  .leaflet-bottom.leaflet-right {
+    bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ==========================================================================
+   ⚙️ プロフィール設定モーダル専用アバター選択UIスタイル
+   ========================================================================== */
+.avatar-category-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+[data-theme="dark"] .avatar-category-tabs {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.avatar-cat-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar-cat-tab:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .avatar-cat-tab:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.avatar-cat-tab.active {
+  background: var(--bg-glass-solid);
+  color: var(--text-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.avatar-grid-wrapper {
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.01);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+[data-theme="dark"] .avatar-grid-wrapper {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.avatar-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: var(--bg-glass-solid);
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.avatar-item-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.avatar-item-btn.selected {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"] .avatar-item-btn.selected {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.avatar-emoji {
+  font-size: 20px;
+}
+
+.avatar-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.avatar-item-btn.selected .avatar-label {
+  color: #10b981;
+}
+
+/* ぷるぷる弾むCSSアニメーション */
+@keyframes rubberBand {
+  from {
+    transform: scale3d(1, 1, 1);
+  }
+  30% {
+    transform: scale3d(1.25, 0.75, 1);
+  }
+  40% {
+    transform: scale3d(0.75, 1.25, 1);
+  }
+  50% {
+    transform: scale3d(1.15, 0.85, 1);
+  }
+  65% {
+    transform: scale3d(0.95, 1.05, 1);
+  }
+  75% {
+    transform: scale3d(1.05, 0.95, 1);
+  }
+  to {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+.avatar-rubber {
+  animation: rubberBand 0.6s both;
+}
+
+
