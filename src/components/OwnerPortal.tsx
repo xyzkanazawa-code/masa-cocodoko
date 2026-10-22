@@ -935,10 +935,12 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
       {isQrModalOpen && (
         <div className="qr-modal-overlay fade-in" onClick={() => setIsQrModalOpen(false)}>
           <div className="qr-modal-content glass-panel-solid" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={() => setIsQrModalOpen(false)} title="閉じる">×</button>
+            <div className="qr-modal-header">
+              <h2 className="modal-title">お客さま用 QRコード印刷・共有</h2>
+              <button className="modal-close-btn" onClick={() => setIsQrModalOpen(false)} title="閉じる">×</button>
+            </div>
             
             <div className="modal-body">
-              <h2 className="modal-title">お客さま用 QRコード印刷・共有</h2>
               
               {session && session.status === 'active' && (
                 <div className="modal-active-content" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
