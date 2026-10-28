@@ -208,7 +208,11 @@ const scheduleDelayedPublish = (session: TrackingSession) => {
   
   delayedPublishTimers[session.id] = setTimeout(() => {
     delete delayedPublishTimers[session.id];
-    publishSessionToCloud(session, true); // 強制即時送信として実行
+    // 予約時点の古い位置ではなく、送信時点の最新セッションを送る
+    const latest = getStoredSessions()[session.id];
+    if (latest) {
+      publishSessionToCloud(latest, true); // 強制即時送信として実行
+    }
   }, 8500); // スロットリング周期（8秒）よりもわずかに長いディレイ
 };
 
