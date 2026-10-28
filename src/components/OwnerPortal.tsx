@@ -122,6 +122,15 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
     };
   }, [owner.id]);
 
+  // 1.5. GPS送信の自動再開
+  // 共有中のまま画面を再読み込み・開き直すとGPS監視が止まり、現在地が最後に
+  // 送れた場所で止まってしまうため、アクティブなセッションがあれば自動で再開する
+  useEffect(() => {
+    if (session && session.status === 'active' && !demoMode) {
+      startGpsTracking(session.id);
+    }
+  }, [session?.id, session?.status, demoMode]);
+
   // 優しい「ピンポーン♪」チャイムを再生する（Web Audio API）
   const playChime = () => {
     if (isMuted) return;
@@ -287,6 +296,9 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
       setGpsErrorMsg('お使いのブラウザはGPS位置情報の取得に対応していません。');
       return;
     }
+
+    // すでにGPS監視中の場合は、二重に開始しない
+    if (watchIdRef.current !== null) return;
 
     setGpsErrorMsg(null);
 
