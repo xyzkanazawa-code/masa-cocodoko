@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   LogOut, Copy, Check, QrCode, 
   Clock, AlertTriangle, MessageSquare, Send, Trash2, Bell, Volume2, VolumeX, RefreshCw,
-  Download, Image, Loader2, Settings, Compass
+  Download, Image, Loader2, Settings, Compass, CheckCircle2
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { 
@@ -19,6 +19,9 @@ import {
   clearFeedbacks,
   subscribeToSystemMessage,
   updateOwnerProfile,
+  resolvePassengerSos,
+  clearPassengerSos,
+  resolveAllActiveSos,
   AVATAR_CATEGORIES
 } from '../services/trackingService';
 import type { Owner, TrackingSession, SystemMessage } from '../services/trackingService';
@@ -100,6 +103,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
   const watchIdRef = useRef<number | null>(null);
   const prevFeedbacksLengthRef = useRef<number>(0);
   const prevSosIdsRef = useRef<Set<string>>(new Set());
+  const dismissedSosIdsRef = useRef<Set<string>>(new Set());
 
   // 1. ローカルストレージ等から既存のセッションを取得・購読
   useEffect(() => {
@@ -213,7 +217,12 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
     }
 
     const passengers = session.passengers;
-    const currentSosPassengers = Object.entries(passengers).filter(([_, p]) => p.isSos);
+    const resolvedMap = session.resolvedSosIds || {};
+
+    // 解決済み（resolvedSosIds）および既にこの端末で消去済みの乗客は除外
+    const currentSosPassengers = Object.entries(passengers).filter(([id, p]) => 
+      p.isSos && !resolvedMap[id] && !dismissedSosIdsRef.current.has(id)
+    );
     const currentSosIds = new Set(currentSosPassengers.map(([id]) => id));
 
     // 新たにSOSを発信した乗客を特定
@@ -235,7 +244,25 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
     }
 
     prevSosIdsRef.current = currentSosIds;
-  }, [session?.passengers, isMuted]);
+  }, [session?.passengers, session?.resolvedSosIds, isMuted]);
+
+  // 特定の乗客のSOSを「対応完了（解決）」にする
+  const handleResolveSos = (passengerId: string) => {
+    if (!session) return;
+    dismissedSosIdsRef.current.add(passengerId);
+    resolvePassengerSos(session.id, passengerId);
+    clearPassengerSos(session.id, passengerId);
+    setSosToast(null);
+  };
+
+  // SOSトーストを閉じる（消した＝対応完了・解決として同期し、再通知ループを完全に防ぐ）
+  const handleDismissSos = (passengerId: string) => {
+    if (!session) return;
+    dismissedSosIdsRef.current.add(passengerId);
+    resolvePassengerSos(session.id, passengerId);
+    clearPassengerSos(session.id, passengerId);
+    setSosToast(null);
+  };
 
   // お客さまメッセージの受信監視と通知音再生
   useEffect(() => {
@@ -259,10 +286,17 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
     prevFeedbacksLengthRef.current = feedbacks.length;
   }, [session?.feedbacks?.length, session?.status, isMuted]);
 
-  // お知らせの送信
+  // お知らせの送信（案内送信時にアクティブなSOSがあれば同時に対応完了・解決）
   const handleSendAnnouncement = () => {
     if (!session || !announcementText.trim()) return;
     sendAnnouncement(session.id, announcementText);
+    
+    // 案内を送信した際、アクティブなSOSがあれば同時に対応完了とする
+    if (session.passengers && Object.values(session.passengers).some(p => p.isSos)) {
+      resolveAllActiveSos(session.id);
+      setSosToast(null);
+    }
+
     setAnnouncementText('');
   };
 
@@ -629,14 +663,13 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
         </div>
       )}
 
-      {/* 緊急SOS警告トースト（タップで位置フォーカス） */}
+      {/* 緊急SOS警告トースト（タップで位置フォーカス、対応完了ボタン付き） */}
       {sosToast && (
         <div 
           className="emergency-toast-container fade-in"
           onClick={() => {
             setMapFocusCoords({ lat: sosToast.lat, lng: sosToast.lng });
-            setSosToast(null);
-            setTimeout(() => setMapFocusCoords(null), 2000);
+            setTimeout(() => setMapFocusCoords(null), 2500);
           }}
           title="タップして地図上でこの乗客の位置にフォーカスします"
         >
@@ -644,17 +677,25 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
             <AlertTriangle className="toast-icon pulse-sos-icon" />
             <div className="toast-body">
               <span className="toast-title">{sosToast.message}</span>
-              <span className="toast-sub">タップして地図上の位置を確認する 🧭</span>
+              <span className="toast-sub">タップして地図上の位置を確認 🧭</span>
             </div>
-            <button 
-              className="toast-close"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSosToast(null);
-              }}
-            >
-              ×
-            </button>
+            <div className="toast-actions" onClick={(e) => e.stopPropagation()}>
+              <button 
+                className="toast-resolve-btn"
+                onClick={() => handleResolveSos(sosToast.id)}
+                title="対応完了にしてSOSアラームと通知を解除します"
+              >
+                <CheckCircle2 size={15} />
+                <span>対応完了</span>
+              </button>
+              <button 
+                className="toast-close"
+                onClick={() => handleDismissSos(sosToast.id)}
+                title="消去（対応完了）"
+              >
+                ×
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -807,6 +848,28 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
                 </div>
               )}
             </div>
+
+            {/* セクションA-2: SOS対応中の乗客（案内完了時のワンタップ解決） */}
+            {session.passengers && Object.entries(session.passengers).some(([id, p]) => p.isSos && !session.resolvedSosIds?.[id]) && (
+              <div className="sidebar-section sos-status-section">
+                <div className="section-header">
+                  <h3 className="section-title sos-title">🚨 SOS発信中の乗客がいます</h3>
+                  <button 
+                    onClick={() => {
+                      resolveAllActiveSos(session.id);
+                      setSosToast(null);
+                      alert('すべてのSOSを対応完了（解決済み）にしました。客側のSOSも解除されました。');
+                    }} 
+                    className="clear-feedbacks-btn sos-resolve-all-btn"
+                  >
+                    すべて解決済みにする
+                  </button>
+                </div>
+                <p className="section-desc">
+                  案内送信や駆けつけ対応が完了したら「すべて解決済みにする」を押してSOSアラームを解除してください。
+                </p>
+              </div>
+            )}
 
             {/* セクションB: 乗客からの連絡受信（受信トレイ） */}
             <div className="sidebar-section">

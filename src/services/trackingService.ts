@@ -105,6 +105,7 @@ export interface TrackingSession {
   announcements?: Announcement[];
   feedbacks?: FeedbackMessage[];
   passengers?: Record<string, PassengerLocation>;
+  resolvedSosIds?: Record<string, number>; // 解決済みSOSの passengerId -> 解決日時(ms)
   nickname?: string;
   avatarIcon?: string;
 }
@@ -456,14 +457,38 @@ const mergeSessionData = (
     } catch {}
   }
 
+  // 解決済みSOSのID一覧を合体
+  const mergedResolvedSosIds: Record<string, number> = {
+    ...(current.resolvedSosIds || {}),
+    ...(incoming.resolvedSosIds || {})
+  };
+
+  // passengers を合体
+  const rawPassengers = incoming.passengers || current.passengers || {};
+  const mergedPassengers: Record<string, PassengerLocation> = {};
+
+  Object.entries(rawPassengers).forEach(([pId, p]) => {
+    // 解決済みリストに登録されている乗客は強制的に isSos: false にサニタイズ（ゾンビ復活防止）
+    const isResolved = Boolean(mergedResolvedSosIds[pId]);
+    mergedPassengers[pId] = {
+      ...p,
+      isSos: isResolved ? false : p.isSos
+    };
+  });
+
   if (isOwner) {
     return {
       ...current,
       feedbacks: incoming.feedbacks || current.feedbacks || [],
-      passengers: incoming.passengers || current.passengers || {}
+      passengers: mergedPassengers,
+      resolvedSosIds: mergedResolvedSosIds
     };
   } else {
-    return incoming;
+    return {
+      ...incoming,
+      passengers: mergedPassengers,
+      resolvedSosIds: mergedResolvedSosIds
+    };
   }
 };
 
@@ -834,14 +859,33 @@ export const updatePassengerLocation = (
   if (!session) return;
 
   const passengers = session.passengers || {};
+  const resolvedSosIds = session.resolvedSosIds || {};
   const now = Date.now();
+
+  // もしこの乗客のSOSが解決済みとして記録されている場合、
+  // 客側端末が未同期のまま古いisSos: trueを送り続けても強制的に無効化（ゾンビ送信防止）
+  let effectiveSos = isSos;
+  if (effectiveSos && resolvedSosIds[passengerId]) {
+    // 解決後30分以内のゾンビ送信は無効化
+    if (now - resolvedSosIds[passengerId] < 30 * 60 * 1000) {
+      effectiveSos = false;
+    } else {
+      // 30分以上経過していれば新規SOSとして許可
+      delete resolvedSosIds[passengerId];
+    }
+  }
+
+  // 客が自らSOSを解除した場合（isSos === false）、解決済みリストに登録
+  if (!isSos && resolvedSosIds[passengerId] === undefined) {
+    resolvedSosIds[passengerId] = now;
+  }
 
   // 最新位置の保存/更新
   passengers[passengerId] = {
     id: passengerId,
     lat,
     lng,
-    isSos,
+    isSos: effectiveSos,
     updatedAt: now
   };
 
@@ -856,7 +900,8 @@ export const updatePassengerLocation = (
   });
 
   session.passengers = cleanedPassengers;
-  saveSessions(sessions);
+  session.resolvedSosIds = resolvedSosIds;
+  saveSessions(sessions, false, effectiveSos);
   notifyListeners(sessionId, sessions);
 };
 
@@ -876,6 +921,63 @@ export const removePassenger = (sessionId: string, passengerId: string) => {
 };
 
 /**
+ * 特定の乗客のSOSを「対応完了・解決済み」にする
+ * （オーナー側からワンタップで即時解決、客側端末のSOSも自動停止させる）
+ */
+export const resolvePassengerSos = (sessionId: string, passengerId: string) => {
+  const sessions = getStoredSessions();
+  const session = sessions[sessionId];
+  if (!session) return;
+
+  if (!session.resolvedSosIds) {
+    session.resolvedSosIds = {};
+  }
+  const now = Date.now();
+  session.resolvedSosIds[passengerId] = now;
+
+  if (session.passengers && session.passengers[passengerId]) {
+    session.passengers[passengerId] = {
+      ...session.passengers[passengerId],
+      isSos: false,
+      updatedAt: now
+    };
+  }
+
+  saveSessions(sessions, false, true);
+  notifyListeners(sessionId, sessions);
+};
+
+/**
+ * 現在アクティブなすべての乗客SOSを一括で「対応完了（解決）」にする
+ * （案内を送信した際や、一括対応時に使用）
+ */
+export const resolveAllActiveSos = (sessionId: string) => {
+  const sessions = getStoredSessions();
+  const session = sessions[sessionId];
+  if (!session || !session.passengers) return;
+
+  if (!session.resolvedSosIds) {
+    session.resolvedSosIds = {};
+  }
+  const now = Date.now();
+
+  let hasSos = false;
+  Object.keys(session.passengers).forEach(id => {
+    if (session.passengers![id].isSos) {
+      session.passengers![id].isSos = false;
+      session.passengers![id].updatedAt = now;
+      session.resolvedSosIds![id] = now;
+      hasSos = true;
+    }
+  });
+
+  if (hasSos) {
+    saveSessions(sessions, false, true);
+    notifyListeners(sessionId, sessions);
+  }
+};
+
+/**
  * 特定の乗客のSOS解除および位置共有クリア（オーナー側から救助完了した際）
  */
 export const clearPassengerSos = (sessionId: string, passengerId: string) => {
@@ -883,10 +985,15 @@ export const clearPassengerSos = (sessionId: string, passengerId: string) => {
   const session = sessions[sessionId];
   if (!session || !session.passengers) return;
 
+  if (!session.resolvedSosIds) {
+    session.resolvedSosIds = {};
+  }
+  session.resolvedSosIds[passengerId] = Date.now();
+
   if (session.passengers[passengerId]) {
     // SOS状態を解除し、かつ位置情報もリストから消去（クリア）する
     delete session.passengers[passengerId];
-    saveSessions(sessions);
+    saveSessions(sessions, false, true);
     notifyListeners(sessionId, sessions);
   }
 };

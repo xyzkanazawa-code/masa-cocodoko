@@ -9,7 +9,8 @@ import {
   sendFeedback, 
   updatePassengerLocation, 
   removePassenger, 
-  clearPassengerSos 
+  clearPassengerSos,
+  resolvePassengerSos
 } from '../services/trackingService';
 import type { TrackingSession } from '../services/trackingService';
 
@@ -205,6 +206,20 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     };
   }, [isOwner, session?.id, session?.status, optInStatus, isSosActive, passengerId]);
 
+  // 運転手・オーナー側でSOSが解決（対応完了）されたことを検知して客側のSOS状態を自動解除
+  useEffect(() => {
+    if (isOwner || !isSosActive || !session) return;
+
+    const isResolvedOnServer = 
+      Boolean(session.resolvedSosIds && session.resolvedSosIds[passengerId]) ||
+      (session.passengers && session.passengers[passengerId] && !session.passengers[passengerId].isSos);
+
+    if (isResolvedOnServer) {
+      setIsSosActive(false);
+      alert('✅ 運転手（スタッフ）による案内・対応が完了したため、SOS緊急位置共有を終了しました。ご安心ください。');
+    }
+  }, [session?.resolvedSosIds, session?.passengers, isOwner, isSosActive, passengerId]);
+
   // オーナー（管理者）自身の現在地のリアルタイム監視（運行開始に関わらず、24時間常に自分だけは見えるようにする）
   useEffect(() => {
     if (!isOwner || !mapRef.current) return;
@@ -316,7 +331,8 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         existingMarker.off('click');
         existingMarker.on('click', () => {
           if (isSos) {
-            if (window.confirm('この乗客のSOSを解除し、救助完了としますか？')) {
+            if (window.confirm('この乗客のSOSを解除し、対応完了（解決）としますか？')) {
+              resolvePassengerSos(session.id, id);
               clearPassengerSos(session.id, id);
             }
           }
@@ -330,7 +346,8 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
         marker.on('click', () => {
           if (isSos) {
-            if (window.confirm('この乗客のSOSを解除し、救助完了としますか？')) {
+            if (window.confirm('この乗客のSOSを解除し、対応完了（解決）としますか？')) {
+              resolvePassengerSos(session.id, id);
               clearPassengerSos(session.id, id);
             }
           }
@@ -603,6 +620,11 @@ export const MapViewer: React.FC<MapViewerProps> = ({
           onClick={() => {
             if (isSosActive) {
               setIsSosActive(false);
+              if (userCoords) {
+                updatePassengerLocation(session.id, passengerId, userCoords.lat, userCoords.lng, false);
+              }
+              resolvePassengerSos(session.id, passengerId);
+              clearPassengerSos(session.id, passengerId);
               alert('SOS緊急位置共有を解除しました。');
             } else {
               if (window.confirm('🚨 運転手へ緊急SOSを発信しますか？現在地がリアルタイムで送信されます。')) {
