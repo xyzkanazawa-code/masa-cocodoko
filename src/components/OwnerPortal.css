@@ -1271,6 +1271,111 @@
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
 }
 
+/* 見せ合いボタン（メッセージボタンの下） */
+.partner-fab {
+  position: absolute;
+  top: 132px; /* 76px(message top) + 44px(height) + 12px(spacing) */
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-glass-solid);
+  color: #059669;
+}
+
+.partner-fab:hover, .partner-fab.active {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.25);
+}
+
+.partner-fab:hover .fab-label-small {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 見せ合いパネル */
+.partner-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.partner-chip {
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass-solid);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.partner-chip.selected {
+  background: #059669;
+  border-color: #059669;
+  color: #fff;
+}
+
+.partner-link-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass-solid);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.partner-error {
+  color: var(--accent-error);
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.partner-start-btn {
+  width: 100%;
+  background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.partner-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.partner-remaining {
+  font-size: 26px;
+  font-weight: 800;
+  color: #059669;
+  text-align: center;
+  margin: 6px 0;
+}
+
+.partner-stop-btn {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--accent-error);
+  background: transparent;
+  color: var(--accent-error);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* メッセージボタンの未読件数バッジ */
 .unread-badge {
   position: absolute;
