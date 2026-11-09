@@ -20,6 +20,7 @@ interface MapViewerProps {
   enableFeedback?: boolean;
   isOwner?: boolean;
   focusCoords?: { lat: number; lng: number } | null;
+  partnerSession?: TrackingSession | null;
 }
 
 export const MapViewer: React.FC<MapViewerProps> = ({ 
@@ -27,7 +28,8 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   theme, 
   enableFeedback = false,
   isOwner = false,
-  focusCoords = null
+  focusCoords = null,
+  partnerSession = null
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -38,6 +40,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   const userMarkerRef = useRef<L.Marker | null>(null);
   const lastIdRef = useRef<string | null>(null);
   const passengerMarkersRef = useRef<Record<string, L.Marker>>({}); // 他の乗客マーカー用（オーナー画面的）
+  const partnerMarkerRef = useRef<L.Marker | null>(null); // 見せ合い相手のバス用（オーナー画面的）
 
   // 匿名乗客IDの取得・生成
   const [passengerId] = useState<string>(() => {
@@ -358,6 +361,42 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     });
 
   }, [isOwner, session?.passengers, session?.id]);
+
+  // オーナー側：見せ合い相手（他の登録者）のバスを地図上に描画（時間限定の相互表示）
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (!partnerSession || partnerSession.status !== 'active') {
+      if (partnerMarkerRef.current) {
+        partnerMarkerRef.current.remove();
+        partnerMarkerRef.current = null;
+      }
+      return;
+    }
+
+    const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+    const label = escapeHtml(partnerSession.nickname || partnerSession.name || '相手のバス');
+    const emoji = escapeHtml(partnerSession.avatarIcon || '🚌');
+    const icon = L.divIcon({
+      className: 'partner-marker-icon',
+      html: `<div style="display:flex;flex-direction:column;align-items:center;">
+               <div style="background:#059669;color:#fff;border:2px solid #fff;border-radius:9999px;padding:4px 12px;font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;">${emoji} ${label}</div>
+               <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #059669;margin-top:-1px;"></div>
+             </div>`,
+      iconSize: [140, 48],
+      iconAnchor: [70, 46]
+    });
+
+    if (partnerMarkerRef.current) {
+      partnerMarkerRef.current.setLatLng([partnerSession.lat, partnerSession.lng]);
+      partnerMarkerRef.current.setIcon(icon);
+    } else {
+      partnerMarkerRef.current = L.marker([partnerSession.lat, partnerSession.lng], {
+        icon,
+        zIndexOffset: 900
+      }).addTo(mapRef.current);
+    }
+  }, [partnerSession]);
 
   // 1. 地図初期化
   useEffect(() => {
