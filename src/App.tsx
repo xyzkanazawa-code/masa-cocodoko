@@ -23,7 +23,7 @@ const getJstDateString = () => {
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [currentSessionId, setCurrentSessionId] = useState<string>('bus-01');
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [session, setSession] = useState<TrackingSession | null>(null);
   
   // 画面モード: 'viewer' (一般地図), 'auth' (ログイン/登録), 'portal' (オーナーダッシュボード)
@@ -132,6 +132,10 @@ function App() {
 
   // 4. 位置情報のリアルタイム購読（監視）
   useEffect(() => {
+    if (!currentSessionId) {
+      setSession(null);
+      return;
+    }
     const unsubscribe = subscribeToTracking(currentSessionId, (data) => {
       setSession(data);
     });
@@ -375,7 +379,8 @@ function App() {
                   }
                 </p>
                 
-                {!isCustomerSessionExpired && (
+                {/* デモ表示ボタンはオーナーログイン中のみ（お客さまが誤ってデモに切り替えないように） */}
+                {!isCustomerSessionExpired && currentOwner && (
                   <div className="error-actions">
                     <button 
                       onClick={() => handleSessionChange('bus-01')} 
@@ -399,8 +404,8 @@ function App() {
             </div>
           )}
 
-          {/* デモ用送信シミュレータ（一般ビューア閲覧時のみ表示、かつセッションが有効な場合） */}
-          {showViewerContent && session && (
+          {/* デモ用送信シミュレータ（オーナーログイン中のみ表示。お客さまの画面には出さない） */}
+          {showViewerContent && session && currentOwner && (
             <SimulatorPanel 
               currentSessionId={currentSessionId} 
               onSessionChange={handleSessionChange} 
