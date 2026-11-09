@@ -78,9 +78,9 @@ function App() {
 
     if (trackingId) {
       setCurrentSessionId(trackingId);
-      if (!ownerRestored) {
-        setViewMode('viewer');
-      }
+      // 追跡リンク（QR・URL）を開いた場合は、オーナーログイン中でも必ず閲覧画面を表示する
+      // （ログイン中のままだとポータル画面になってしまい、お客さんがバスを見られないため）
+      setViewMode('viewer');
     } else {
       // パラメータがない場合
       if (ownerRestored) {
