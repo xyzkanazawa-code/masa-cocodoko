@@ -32,7 +32,7 @@ function App() {
   // ログイン中のオーナー情報
   const [currentOwner, setCurrentOwner] = useState<Owner | null>(null);
 
-  // 閲覧時間制限 (9:00 〜 19:00) の判定
+  // 閲覧時間制限 (9:00 〜 21:00) の判定
   const [isWithinViewingHours, setIsWithinViewingHours] = useState<boolean>(true);
   const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
 
@@ -95,7 +95,7 @@ function App() {
     }
   }, []);
 
-  // 2. 閲覧時間帯 (9:00 〜 19:00) のリアルタイム監視タイマー (日本標準時 JST に準拠)
+  // 2. 閲覧時間帯 (9:00 〜 21:00) のリアルタイム監視タイマー (日本標準時 JST に準拠)
   useEffect(() => {
     const checkViewingHours = () => {
       const now = new Date();
@@ -108,8 +108,8 @@ function App() {
       const hours = jstDate.getHours();
       const minutes = jstDate.getMinutes();
       
-      // 9:00 から 18:00 (18:00ちょうど以降は時間外)
-      const within = hours >= 9 && hours < 18;
+      // 9:00 から 21:00 (21:00ちょうど以降は時間外)
+      const within = hours >= 9 && hours < 21;
       setIsWithinViewingHours(within);
 
       // 表示用の現在時刻
@@ -285,7 +285,7 @@ function App() {
   };
 
   // 閲覧可能かどうか
-  // 一般閲覧画面では、9:00〜19:00の営業時間外は制限されますが、
+  // 一般閲覧画面では、9:00〜21:00の営業時間外は制限されますが、
   // 管理者（オーナー）がログインしている状態であれば、夜間テストやデモのために自動的に制限をバイパス（解除）します。
   const showViewerContent = 
     isWithinViewingHours || 
@@ -344,10 +344,10 @@ function App() {
                 </div>
                 <h2>営業時間外（閲覧制限）</h2>
                 <p className="restriction-time-badge">
-                  閲覧可能時間: <strong>9:00 〜 18:00</strong>
+                  閲覧可能時間: <strong>9:00 〜 21:00</strong>
                 </p>
                 <p className="description">
-                  マサさん設定のセキュリティ保護のため、夜間および早朝（18:00〜翌9:00）はお客さんの地図閲覧を休止しています。
+                  マサさん設定のセキュリティ保護のため、夜間および早朝（21:00〜翌9:00）はお客さんの地図閲覧を休止しています。
                 </p>
                 <div className="current-time-info">
                   <span>現在時刻: <strong>{currentTimeStr}</strong></span>
