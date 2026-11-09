@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   LogOut, Copy, Check, QrCode, 
   Clock, AlertTriangle, MessageSquare, Send, Trash2, Bell, Volume2, VolumeX, RefreshCw,
-  Download, Image, Loader2, Settings, Compass, CheckCircle2
+  Download, Image, Loader2, Settings, Compass, CheckCircle2, Users
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { 
@@ -68,6 +68,82 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
   const [sosToast, setSosToast] = useState<{ id: string; lat: number; lng: number; message: string } | null>(null);
   const [mapFocusCoords, setMapFocusCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // 見せ合い（登録者どうしの時間限定の相互表示）用
+  const partnerStorageKey = `coco-doco-partner-${owner.id}`;
+  const [isPartnerPanelOpen, setIsPartnerPanelOpen] = useState(false);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [partnerSession, setPartnerSession] = useState<TrackingSession | null>(null);
+  const [partnerExpiresAt, setPartnerExpiresAt] = useState<number | null>(null);
+  const [partnerRemainingMs, setPartnerRemainingMs] = useState(0);
+  const [partnerInput, setPartnerInput] = useState('');
+  const [partnerMinutes, setPartnerMinutes] = useState<number>(60);
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+  const [partnerEndedMsg, setPartnerEndedMsg] = useState<string | null>(null);
+
+  // 相手のお客さん用リンク（またはセッションID）からセッションIDを取り出す
+  const parsePartnerSessionId = (text: string): string | null => {
+    const t = text.trim();
+    if (!t) return null;
+    const fromParam = t.match(/[?&#]session=([A-Za-z0-9_-]+)/) || t.match(/[?&#]tracking_id=([A-Za-z0-9_-]+)/);
+    if (fromParam) return fromParam[1];
+    const raw = t.match(/(session-[A-Za-z0-9_-]+)/);
+    if (raw) return raw[1];
+    if (/^[A-Za-z0-9_-]+$/.test(t)) return t;
+    return null;
+  };
+
+  // 見せ合いを終了する（時間が来た・相手が運行終了・手動停止の共通処理）
+  const endPartner = (msg?: string) => {
+    localStorage.removeItem(partnerStorageKey);
+    setPartnerId(null);
+    setPartnerSession(null);
+    setPartnerExpiresAt(null);
+    setPartnerRemainingMs(0);
+    if (msg) {
+      setPartnerEndedMsg(msg);
+      setIsPartnerPanelOpen(true);
+    }
+  };
+
+  // 見せ合いを開始する
+  const handleStartPartner = () => {
+    const id = parsePartnerSessionId(partnerInput);
+    if (!id) {
+      setPartnerError('リンクを読み取れませんでした。相手のお客さん用リンクをそのまま貼ってください。');
+      return;
+    }
+    if (id === `session-${owner.id}`) {
+      setPartnerError('それは自分のリンクです。相手のリンクを貼ってください。');
+      return;
+    }
+    let expiresAt: number;
+    if (partnerMinutes === -1) {
+      const end = new Date();
+      end.setHours(21, 0, 0, 0);
+      if (end.getTime() <= Date.now()) {
+        setPartnerError('今日の21時はもう過ぎています。時間の長さの方で選んでください。');
+        return;
+      }
+      expiresAt = end.getTime();
+    } else {
+      expiresAt = Date.now() + partnerMinutes * 60 * 1000;
+    }
+    localStorage.setItem(partnerStorageKey, JSON.stringify({ sessionId: id, expiresAt }));
+    setPartnerError(null);
+    setPartnerEndedMsg(null);
+    setPartnerExpiresAt(expiresAt);
+    setPartnerId(id);
+  };
+
+  const formatPartnerRemaining = (ms: number) => {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  };
+
   // 緊急システムメッセージ（電光掲示板テロップ）用のステート
   const [systemMsg, setSystemMsg] = useState<SystemMessage | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false); // 更新ボタンのアニメーション用
@@ -125,6 +201,57 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
       stopGpsTracking();
     };
   }, [owner.id]);
+
+  // 見せ合い：保存済みの相手を復元する
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(partnerStorageKey);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved && saved.sessionId && saved.expiresAt > Date.now()) {
+          setPartnerId(saved.sessionId);
+          setPartnerExpiresAt(saved.expiresAt);
+        } else {
+          localStorage.removeItem(partnerStorageKey);
+        }
+      }
+    } catch (e) {
+      // 復元に失敗しても通常運行に影響させない
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 見せ合い：相手のセッションを購読する
+  useEffect(() => {
+    if (!partnerId) {
+      setPartnerSession(null);
+      return;
+    }
+    const unsubscribe = subscribeToTracking(partnerId, (data) => {
+      setPartnerSession(data);
+      if (data && data.status === 'inactive') {
+        endPartner('相手が運行を終了したので、見せ合いを終わりました');
+      }
+    });
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerId]);
+
+  // 見せ合い：残り時間のカウントダウンと自動終了
+  useEffect(() => {
+    if (!partnerExpiresAt) return;
+    const update = () => {
+      const remaining = partnerExpiresAt - Date.now();
+      setPartnerRemainingMs(Math.max(0, remaining));
+      if (remaining <= 0) {
+        endPartner('決めた時間が来たので、見せ合いを終わりました');
+      }
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerExpiresAt]);
 
   // 1.5. GPS送信の自動再開
   // 共有中のまま画面を再読み込み・開き直すとGPS監視が止まり、現在地が最後に
@@ -707,6 +834,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
           theme={theme} 
           isOwner={true} 
           focusCoords={mapFocusCoords} 
+          partnerSession={partnerSession}
         />
       </div>
 
@@ -767,6 +895,101 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({ owner, onLogout, theme
             </span>
           )}
         </button>
+      )}
+
+      {/* 見せ合いボタン（運行中のみ、メッセージボタンの下に表示） */}
+      {session && session.status === 'active' && (
+        <button
+          className={`fab-btn partner-fab glass-panel-solid fade-in ${isPartnerPanelOpen ? 'active' : ''}`}
+          onClick={() => setIsPartnerPanelOpen(!isPartnerPanelOpen)}
+          title="他の登録者と時間限定で見せ合う"
+        >
+          <Users size={16} />
+          <span className="fab-label-small">見せ合い</span>
+        </button>
+      )}
+
+      {/* 見せ合いパネル（登録者どうしの時間限定の相互表示） */}
+      {session && session.status === 'active' && isPartnerPanelOpen && (
+        <div className="message-center-sidebar glass-panel-solid slide-in-left">
+          <div className="sidebar-header">
+            <div className="sidebar-title">
+              <Users size={18} className="title-icon" />
+              <span>見せ合い（時間限定）</span>
+            </div>
+            <button
+              className="sidebar-close-btn"
+              onClick={() => setIsPartnerPanelOpen(false)}
+              title="閉じる"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="sidebar-body">
+            <div className="sidebar-section">
+              {partnerEndedMsg && (
+                <p className="section-desc" style={{ fontWeight: 700 }}>{partnerEndedMsg}</p>
+              )}
+              {!partnerId ? (
+                <>
+                  <h3 className="section-title">🚌 相手のバスを地図に出す</h3>
+                  <p className="section-desc">
+                    相手の運転手さんのお客さん用リンクを貼ると、決めた時間だけ、自分の地図に相手のバスが出ます。相手も同じことをすれば、お互いに見えます。時間が来たら自動で消えます。
+                  </p>
+                  <input
+                    type="text"
+                    value={partnerInput}
+                    onChange={(e) => setPartnerInput(e.target.value)}
+                    placeholder="相手のお客さん用リンクを貼る"
+                    className="partner-link-input"
+                  />
+                  <p className="section-desc" style={{ marginTop: '10px', marginBottom: 0 }}>見せ合う時間</p>
+                  <div className="partner-chip-row">
+                    {[30, 60, 120, 180, 360].map((min) => (
+                      <button
+                        key={min}
+                        className={`partner-chip ${partnerMinutes === min ? 'selected' : ''}`}
+                        onClick={() => setPartnerMinutes(min)}
+                      >
+                        {min < 60 ? `${min}分` : `${min / 60}時間`}
+                      </button>
+                    ))}
+                    <button
+                      className={`partner-chip ${partnerMinutes === -1 ? 'selected' : ''}`}
+                      onClick={() => setPartnerMinutes(-1)}
+                    >
+                      今日の21時まで
+                    </button>
+                  </div>
+                  {partnerError && <p className="partner-error">{partnerError}</p>}
+                  <button
+                    className="partner-start-btn"
+                    onClick={handleStartPartner}
+                    disabled={!partnerInput.trim()}
+                  >
+                    見せ合いを始める
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="section-title">🚌 見せ合い中</h3>
+                  <p className="section-desc">
+                    相手：{partnerSession ? (partnerSession.nickname || partnerSession.name) : '（相手の運行開始を待っています）'}
+                  </p>
+                  {partnerSession && partnerSession.status === 'active' && (
+                    <p className="section-desc">相手のバスを地図に表示しています。</p>
+                  )}
+                  <p className="section-desc" style={{ textAlign: 'center', marginBottom: 0 }}>のこり時間</p>
+                  <div className="partner-remaining">{formatPartnerRemaining(partnerRemainingMs)}</div>
+                  <button className="partner-stop-btn" onClick={() => endPartner()}>
+                    見せ合いをやめる
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 運行中メッセージセンター（サイドパネル） */}
